@@ -1,7 +1,10 @@
 """Kalkulator ryzyka odejścia klienta: drzewo decyzyjne z laboratorium 7 (eksploracja danych)."""
+import matplotlib
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt
 import pandas as pd
 import streamlit as st
-from sklearn.tree import DecisionTreeClassifier, export_text
+from sklearn.tree import DecisionTreeClassifier, export_text, plot_tree
 from sklearn.model_selection import train_test_split
 
 CECHY = ["liczba_zamowien", "wydatki_zl", "sredni_koszyk_zl", "dni_od_ostatniego",
@@ -53,6 +56,21 @@ for w in wezly:
         cecha, prog_w = CECHY[drzewo.feature[w]], drzewo.threshold[w]
         tak = klient.iloc[0][cecha] <= prog_w
         st.write(f"{cecha} = {klient.iloc[0][cecha]:.2f} {'≤' if tak else '>'} {prog_w:.2f}")
+
+# rysunek drzewa: czerwona ramka = ścieżka wpisanego klienta
+st.subheader("Drzewo decyzyjne")
+fig, ax = plt.subplots(figsize=(18, 7))
+napisy = plot_tree(model, feature_names=CECHY, class_names=["zostaje", "odchodzi"], filled=True,
+                   impurity=False, rounded=True, fontsize=9, ax=ax)
+prostokaty = [n for n in napisy if n.get_bbox_patch() is not None]   # bez napisów True/False przy korzeniu
+for w in wezly:   # numery węzłów sklearn = kolejność rysowania prostokątów
+    ramka = prostokaty[w].get_bbox_patch()
+    ramka.set_edgecolor("red")
+    ramka.set_linewidth(3)
+st.pyplot(fig)
+plt.close(fig)
+st.caption("Czerwona ramka: ścieżka wpisanego klienta. W lewo idą klienci, dla których odpowiedź brzmi „tak”. "
+           "value = [ilu zostaje, ilu odchodzi] w danych uczących.")
 
 with st.expander("Całe drzewo jako reguły"):
     st.code(export_text(model, feature_names=CECHY))
