@@ -1,8 +1,7 @@
 """Kalkulator ryzyka odejścia klienta: drzewo decyzyjne z laboratorium 7 (eksploracja danych)."""
-import matplotlib
-matplotlib.use("Agg")
-import matplotlib.pyplot as plt
 import pandas as pd
+from matplotlib.backends.backend_agg import FigureCanvasAgg
+from matplotlib.figure import Figure
 import streamlit as st
 from sklearn.tree import DecisionTreeClassifier, export_text, plot_tree
 from sklearn.model_selection import train_test_split
@@ -59,7 +58,11 @@ for w in wezly:
 
 # rysunek drzewa: czerwona ramka = ścieżka wpisanego klienta
 st.subheader("Drzewo decyzyjne")
-fig, ax = plt.subplots(figsize=(18, 7))
+# własny Figure z płótnem Agg zamiast plt.subplots: pyplot ma globalny stan i psuje się,
+# gdy Streamlit przerywa jeden przebieg skryptu kolejnym (szybkie klikanie w formularzu)
+fig = Figure(figsize=(18, 7))
+FigureCanvasAgg(fig)
+ax = fig.subplots()
 napisy = plot_tree(model, feature_names=CECHY, class_names=["zostaje", "odchodzi"], filled=True,
                    impurity=False, rounded=True, fontsize=9, ax=ax)
 prostokaty = [n for n in napisy if n.get_bbox_patch() is not None]   # bez napisów True/False przy korzeniu
@@ -68,7 +71,6 @@ for w in wezly:   # numery węzłów sklearn = kolejność rysowania prostokąt�
     ramka.set_edgecolor("red")
     ramka.set_linewidth(3)
 st.pyplot(fig)
-plt.close(fig)
 st.caption("Czerwona ramka: ścieżka wpisanego klienta. W lewo idą klienci, dla których odpowiedź brzmi „tak”. "
            "value = [ilu zostaje, ilu odchodzi] w danych uczących.")
 
